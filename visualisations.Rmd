@@ -1,0 +1,351 @@
+---
+title: "DHNB_käppyrä.Rmd"
+author: "Ümit Bedretdin"
+date: "3/16/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(forcats)
+library(ggthemes)
+library(scales)
+library(hrbrthemes)
+library(ggplot2)
+library(showtext)
+showtext_auto()
+```
+
+# Graphs for the binary classification task
+
+## create data
+```{r}
+seq = c(0.84, 0.57, 0.9, 0.73, 0.91, 0.72)
+
+data = matrix(seq, ncol=2)
+colnames(data)  = c("Alcohol_policy", "Countermedia")
+rownames(data) = c("Topics", "[CLS]", "Topics + [CLS]")
+
+
+```
+
+```{r}
+seq1 = c("Topics", "Topics", "[CLS]", "[CLS]", "Topics + [CLS]", "Topics + [CLS]")
+seq2 = c("Alcohol policy", "Countermedia", "Alcohol policy", "Countermedia", "Alcohol policy", "Countermedia")
+seq3 = seq
+
+df <- data.frame(matrix(ncol = 3, nrow = 6))
+
+
+df[,1] = seq1
+df[,2] = seq2
+df[,3] = seq3
+
+names(df)[names(df) == 'X1'] <- 'Classification_feature'
+names(df)[names(df) == 'X2'] <- 'Task'
+names(df)[names(df) == 'X3'] <- 'F1_score'
+
+df
+```
+
+```{r}
+## barolot with f1 performance of classifiers on the two use cases
+df %>%
+  arrange(desc(F1_score)) %>% 
+  ggplot(aes(Task, F1_score, label = F1_score, fill = Classification_feature)) +
+
+  geom_bar(stat="identity", position=position_dodge()) +
+  theme_tufte(base_family = "IBMPlexSans", ticks = FALSE) +
+  theme(plot.title = element_text(size = 16,
+                                  family="IBMPlexSans-Bold"),
+        plot.subtitle = element_text(size = 13)) +
+  labs(x = NULL, y = expression(f1),
+       title = "Binary classification task",
+       subtitle = "Alcohol policy / countermedia comparison") +
+  geom_text(vjust=-0.5,aes(label = F1_score), position = position_dodge(0.9))
+
+```
+
+
+## draw plot
+```{r}
+df %>%
+  ggplot(aes(X1, X3, label = X3, fill = X2)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+geom_text(hjust = 0, nudge_y = 0.0005, size = 3,
+            family = "IBMPlexSans")
+  theme_tufte(base_family = "IBMPlexSans", ticks = FALSE) +
+  theme(plot.title = element_text(size = 16,
+                                  family="IBMPlexSans-Bold"),
+        plot.subtitle = element_text(size = 13)) +
+  labs(x = NULL, y = expression(f1),
+       title = "test",
+       subtitle = "test")
+```
+
+# Graphs for the multiclass classification task
+
+```{r}
+
+#unnormalized structural features
+seq_mc = c(0.53, 0.83, 0.32, 0.69,
+        0.13, 0.79, 0.43, 0.62,
+        0.45, 0.89, 0.62, 0.8,
+        0.1, 0.85, 0.43, 0.7,
+        0.48, 0.89, 0.64, 0.81,
+        0.16, 0.79, 0.43, 0.67)
+
+#add here, normalized structural features
+
+seq_norm = c(0.5, 0.83, 0.32, 0.69,
+        0.06, 0.83, 0.54, 0.72,
+        0.46, 0.9, 0.63, 0.8,
+        0.54, 0.87, 0.47, 0.76,
+        0.42, 0.89, 0.65, 0.79,
+        0.5, 0.9, 0.7, 0.82)
+
+seq1 = c("Topics", "Topics","Topics", "Topics",
+         "Structural features", "Structural features", "Structural features", "Structural features",
+         "[CLS]", "[CLS]", "[CLS]", "[CLS]",
+         "Topics + Structural features", "Topics + Structural features", "Topics + Structural features", "Topics + Structural features",
+         "Topics + [CLS]", "Topics + [CLS]", "Topics + [CLS]", "Topics + [CLS]",
+         "Structural features + [CLS]", "Structural features + [CLS]", "Structural features + [CLS]", "Structural features + [CLS]")
+
+seq2 = c("Criticism", "Copies", "Original", "Microaveraged",
+         "Criticism", "Copies", "Original", "Microaveraged",
+         "Criticism", "Copies", "Original", "Microaveraged",
+         "Criticism", "Copies", "Original", "Microaveraged",
+         "Criticism", "Copies", "Original", "Microaveraged",
+         "Criticism", "Copies", "Original", "Microaveraged")
+seq3 = seq_mc
+
+df_mc <- data.frame(matrix(ncol = 3, nrow = 24))
+
+
+df_mc[,1] = seq1
+df_mc[,2] = seq2
+df_mc[,3] = seq3
+
+names(df_mc)[names(df_mc) == 'X1'] <- 'Classification_feature'
+names(df_mc)[names(df_mc) == 'X2'] <- 'Class'
+names(df_mc)[names(df_mc) == 'X3'] <- 'F1_score'
+
+df_mc
+```
+```{r}
+df_mc %>%
+  mutate(name = fct_relevel(Class, "Criticism", "Copies", "Original", "Microaveraged")) %>% 
+  ggplot(aes(x = fct_relevel(Class, "Criticism", "Copies", "Original", "Microaveraged"), y = F1_score, label = F1_score, fill = Classification_feature)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  theme_tufte(base_family = "IBMPlexSans", ticks = FALSE) +
+  theme(plot.title = element_text(size = 16,
+                                  family="IBMPlexSans-Bold"),
+        plot.subtitle = element_text(size = 13)) +
+  labs(x = NULL, y = expression(f1),
+       title = "Multiclass classification task",
+       subtitle = "All feature combinations") +
+  geom_text(aes(label = F1_score), position = position_dodge(0.9), size = 3)
+```
+```{r}
+df_mc %>%
+  mutate(name = fct_relevel(Classification_feature, "Criticism", "Copies", "Original", "Microaveraged")) %>% 
+  ggplot(aes(Classification_feature, F1_score, label = F1_score, fill = Class)) +
+
+  geom_bar(stat="identity", position=position_dodge()) +
+  theme_tufte(base_family = "IBMPlexSans", ticks = FALSE) +
+  theme(plot.title = element_text(size = 16,
+                                  family="IBMPlexSans-Bold"),
+        plot.subtitle = element_text(size = 13)) +
+  labs(x = NULL, y = expression(f1),
+       title = "Multiclass classification task",
+       subtitle = "All feature combinations") +
+  geom_text(aes(label = F1_score), position = position_dodge(0.9), size=3)
+```
+
+
+```{r}
+seq_norm = c(0.5, 0.83, 0.32, 0.69,
+        0.06, 0.83, 0.54, 0.72,
+        0.46, 0.9, 0.63, 0.8,
+        0.54, 0.87, 0.47, 0.76,
+        0.42, 0.89, 0.65, 0.79,
+        0.5, 0.9, 0.7, 0.82)
+
+seq1 = c("Topics", "Topics","Topics", "Topics",
+         "Structural features", "Structural features", "Structural features", "Structural features",
+         "[CLS]", "[CLS]", "[CLS]", "[CLS]",
+         "Topics + Structural features", "Topics + Structural features", "Topics + Structural features", "Topics + Structural features",
+         "Topics + [CLS]", "Topics + [CLS]", "Topics + [CLS]", "Topics + [CLS]",
+         "Structural features + [CLS]", "Structural features + [CLS]", "Structural features + [CLS]", "Structural features + [CLS]")
+
+seq2 = c("Criticism", "Copies", "Original", "Microaveraged",
+         "Criticism", "Copies", "Original", "Microaveraged",
+         "Criticism", "Copies", "Original", "Microaveraged",
+         "Criticism", "Copies", "Original", "Microaveraged",
+         "Criticism", "Copies", "Original", "Microaveraged",
+         "Criticism", "Copies", "Original", "Microaveraged")
+seq3 = seq_norm
+
+df_mc <- data.frame(matrix(ncol = 3, nrow = 24))
+
+
+df_mc[,1] = seq1
+df_mc[,2] = seq2
+df_mc[,3] = seq3
+
+names(df_mc)[names(df_mc) == 'X1'] <- 'Classification_feature'
+names(df_mc)[names(df_mc) == 'X2'] <- 'Class'
+names(df_mc)[names(df_mc) == 'X3'] <- 'F1_score'
+
+df_mc
+
+df_mc %>%
+  mutate(name = fct_relevel(Class, "Criticism", "Copies", "Original", "Microaveraged")) %>% 
+  ggplot(aes(x = fct_relevel(Class, "Criticism", "Copies", "Original", "Microaveraged"), y = F1_score, label = F1_score, fill = Classification_feature)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  theme_tufte(base_family = "IBMPlexSans", ticks = FALSE) +
+  theme(plot.title = element_text(size = 16,
+                                  family="IBMPlexSans-Bold"),
+        plot.subtitle = element_text(size = 13)) +
+  labs(x = NULL, y = expression(f1),
+       title = "Multiclass classification task",
+       subtitle = "All feature combinations") +
+  geom_text(aes(label = F1_score), position = position_dodge(0.9), size = 3)
+```
+
+6.6.2022 graphs
+
+```{r}
+countermedia_results <- read_csv("~/PycharmProjects/pythonProject/countermedia_multiclass_results_tidy.csv")
+```
+
+#microaveraged f1 scores by class and classifier
+```{r}
+microaveraged_f1 <- filter(countermedia_results, metric == "f1")
+
+
+microaveraged_f1  %>% filter(!grepl("*unnormalized", classifier)) %>%
+  ggplot(aes(x = fct_relevel(class, "criticism", "copies", "original", "microaveraged"), y = value, label = metric, fill = classifier)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  theme_tufte(base_family = "IBMPlexSans", ticks = FALSE) +
+  theme(plot.title = element_text(size = 16,
+                                  family="IBMPlexSans-Bold"),
+        plot.subtitle = element_text(size = 13)) +
+  labs(x = NULL, y = expression(score),
+       title = "Countermedia multiclass classification task",
+       subtitle = "F1 scores") +
+  geom_text(vjust = -0.5, aes(label = round(value, digits = 2)),  size = 3, position = position_dodge(0.9))
+
+
+```
+#recall per class per classifier 
+
+```{r}
+recall  <- filter(countermedia_results, metric == "recall")
+precision <- filter(countermedia_results, metric == "precision")
+```
+
+```{r}
+recall %>% filter(!grepl("*unnormalized", classifier)) %>%
+  ggplot(aes(x = fct_relevel(class, "criticism", "copies", "original", "microaveraged"), y = value, label = metric, fill = classifier)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  theme_tufte(base_family = "IBMPlexSans", ticks = FALSE) +
+  theme(plot.title = element_text(size = 16,
+                                  family="IBMPlexSans-Bold"),
+        plot.subtitle = element_text(size = 13)) +
+  labs(x = NULL, y = expression(score),
+       title = "Multiclass classification task",
+       subtitle = "Recall") +
+  geom_text(vjust = -0.5,aes(label = round(value, digits = 2)), position = position_dodge(0.9), size = 3)
+
+```
+# precision by class by classifier
+
+```{r}
+precision %>% filter(!grepl("*unnormalized", classifier)) %>%
+  ggplot(aes(x = fct_relevel(class, "criticism", "copies", "original", "microaveraged"), y = value, label = metric, fill = classifier)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  theme_tufte(base_family = "IBMPlexSans", ticks = FALSE) +
+  theme(plot.title = element_text(size = 16,
+                                  family="IBMPlexSans-Bold"),
+        plot.subtitle = element_text(size = 13)) +
+  labs(x = NULL, y = expression(score),
+       title = "Multiclass classification task",
+       subtitle = "Precision") +
+  geom_text(vjust = -0.5,aes(label = round(value, digits = 2)), position = position_dodge(0.9), size = 3)
+```
+
+
+# class specific graphs
+
+```{r}
+criticism <- filter(countermedia_results, class == "criticism")
+copies <- filter(countermedia_results, class == "copies")
+original <- filter(countermedia_results, class == "original")
+```
+
+
+```{r}
+criticism %>%
+  ggplot(aes(x = fct_relevel(metric, "recall", "precision", "f1"), y = value, label = metric, fill = classifier)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  theme_tufte(base_family = "IBMPlexSans", ticks = FALSE) +
+  theme(plot.title = element_text(size = 16,
+                                  family="IBMPlexSans-Bold"),
+        plot.subtitle = element_text(size = 13)) +
+  labs(x = NULL, y = expression(score),
+       title = "Multiclass classification task",
+       subtitle = "Class: Criticism") +
+  geom_text(aes(label = round(value, digits = 2)), position = position_dodge(0.9), size = 3)
+```
+
+```{r}
+copies %>%
+  ggplot(aes(x = fct_relevel(metric, "recall", "precision", "f1"), y = value, label = metric, fill = classifier)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  theme_tufte(base_family = "IBMPlexSans", ticks = FALSE) +
+  theme(plot.title = element_text(size = 16,
+                                  family="IBMPlexSans-Bold"),
+        plot.subtitle = element_text(size = 13)) +
+  labs(x = NULL, y = expression(score),
+       title = "Multiclass classification task",
+       subtitle = "Class: Copies") +
+  geom_text(aes(label = round(value, digits = 2)), position = position_dodge(0.9), size = 3)
+```
+
+```{r}
+criticism %>%
+  ggplot(aes(x = fct_relevel(metric, "recall", "precision", "f1"), y = value, label = metric, fill = classifier)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  theme_tufte(base_family = "IBMPlexSans", ticks = FALSE) +
+  theme(plot.title = element_text(size = 16,
+                                  family="IBMPlexSans-Bold"),
+        plot.subtitle = element_text(size = 13)) +
+  labs(x = NULL, y = expression(score),
+       title = "Multiclass classification task",
+       subtitle = "Class: Original content") +
+  geom_text(aes(label = ""), position = position_dodge(), width = 15)
+```
+
+# Loss graphs
+
+```{r}
+
+mv_data_analyse <- read_csv("/Users/beum/countermedia_aboutness/data/MV_data_final_features_topics.csv")
+```
+
+```{r}
+# articles that the classifier misclassified and also pihla misclassified
+
+ids = c(35434, 37731, 41284, 38256, 48169, 36487, 33586, 58830)
+df_ids <- as.data.frame(ids)
+konepihla <- filter(mv_data_analyse,id %in% df_ids$ids)
+
+#write_csv(konepihla, "~/MV_misclassified_pihla_vs_classifier.csv", append=FALSE)
+
+```
+
